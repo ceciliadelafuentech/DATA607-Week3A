@@ -88,6 +88,7 @@ movie_effect <- movie_effect %>%
   mutate(
     movie_relative = movie_mean - global_mean
   )
+glimpse(movie_effect)
 ```
 
 Create a new data frame that groups by id and calculates the average rating each id gave on a new column user_mean
@@ -108,6 +109,7 @@ user_effect <- user_effect %>%
     user_relative = user_mean - global_mean,
     user_relative = ifelse(is.nan(user_relative), 0, user_relative)
   )
+glimpse(user_effect)
 ```
 
 Join both movie and user data frames to consolidate rating and all relative calculations
@@ -132,6 +134,7 @@ baseline_data <- baseline_data %>%
     baseline_estimate = global_mean + movie_relative + user_relative,
     baseline_estimate = pmin(baseline_estimate, 5)
   )
+glimpse(baseline_data)
 ```
 
 Make a subset of data frame called recommendations that filters for "Have not seen it" or NA responses and shows the estimate rating.
@@ -140,6 +143,7 @@ Make a subset of data frame called recommendations that filters for "Have not se
 recommendations <- baseline_data %>%
   filter(is.na(rating)) %>%
   arrange(id, desc(baseline_estimate))
+head(recommendations)
 ```
 
 ### Conclusion
