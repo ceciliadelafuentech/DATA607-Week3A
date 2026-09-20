@@ -36,12 +36,15 @@ con <- dbConnect(
 )
 ```
 
+Checked current tables in database, assigned names in R
+
 ```{r}
 dbListTables(con)
 rating_lookup <- dbReadTable(con, "rating_lookup")
 survey_responses <- dbReadTable(con, "survey_responses")
-head(survey_responses)
 ```
+
+Transformed data frame so that each movie name became a value under movie column with their respective response value
 
 ```{r}
 movie_ratings <- survey_responses %>%
@@ -53,24 +56,32 @@ movie_ratings <- survey_responses %>%
 glimpse(movie_ratings)
 ```
 
+Joined the rating_lookup table by response to add the corresponding numeric value to the ratings
+
 ```{r}
-movie_data <- movie_ratings %>%
+movie_ratings <- movie_ratings %>%
   left_join(rating_lookup, by = "response")
 glimpse(movie_ratings)
 ```
 
+Calculate the global mean excluding NAs
+
 ```{r}
-global_mean <- mean(movie_data$rating, na.rm = TRUE)
+global_mean <- mean(movie_ratings$rating, na.rm = TRUE)
 global_mean
 ```
 
+Create a new data frame that groups by movie and calculates the average rating for each on a new column movie_mean
+
 ```{r}
-movie_effect <- movie_data %>%
+movie_effect <- movie_ratings %>%
   group_by(movie) %>%
   summarise(
     movie_mean = mean(rating, na.rm = TRUE)
   )
 ```
+
+Calculate the relative rating to the global mean for each
 
 ```{r}
 movie_effect <- movie_effect %>%
@@ -79,13 +90,17 @@ movie_effect <- movie_effect %>%
   )
 ```
 
+Create a new data frame that groups by id and calculates the average rating each id gave on a new column user_mean
+
 ```{r}
-user_effect <- movie_data %>%
+user_effect <- movie_ratings %>%
   group_by(id) %>%
   summarise(
     user_mean = mean(rating, na.rm = TRUE)
   )
 ```
+
+Calculate the relative rating to the global mean for each, but deal with NAs by assigning them a 0 rating
 
 ```{r}
 user_effect <- user_effect %>%
@@ -95,8 +110,10 @@ user_effect <- user_effect %>%
   )
 ```
 
+Join both movie and user data frames to consolidate rating and all relative calculations
+
 ```{r}
-baseline_data <- movie_data %>%
+baseline_data <- movie_ratings %>%
   left_join(
     movie_effect %>% select(movie, movie_relative),
     by = "movie"
@@ -107,6 +124,8 @@ baseline_data <- movie_data %>%
   )
 ```
 
+Calculate an rating estimate for each id and movie but cap rating at 5
+
 ```{r}
 baseline_data <- baseline_data %>%
   mutate(
@@ -115,8 +134,14 @@ baseline_data <- baseline_data %>%
   )
 ```
 
+Make a subset of data frame called recommendations that filters for "Have not seen it" or NA responses and shows the estimate rating.
+
 ```{r}
 recommendations <- baseline_data %>%
   filter(is.na(rating)) %>%
   arrange(id, desc(baseline_estimate))
 ```
+
+### Conclusion
+
+I used the survey ratings to calculate the global average rating, each movie's rating and each user's rating compared to the global average. I then combined these values to estimate how each user might rate movies they had not seen.
